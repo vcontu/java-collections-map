@@ -10,6 +10,7 @@ public class Student //TODO consider implementing any interfaces necessary for y
     private String name;
     private LocalDate dateOfBirth;
     private String details;
+    private String testGit;
 
     public Student(String name, LocalDate dateOfBirth, String details) {
         this.name = name;
