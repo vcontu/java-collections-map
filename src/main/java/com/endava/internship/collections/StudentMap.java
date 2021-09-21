@@ -4,14 +4,15 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class StudentMap<K extends Comparable<K>, V> implements Map<K, V> {
+    
     static class Entry<K, V> implements Map.Entry<K, V> {
 
-        K key;
-        V value;
+        private final K key;
+        private V value;
 
-        Entry<K, V> left;
-        Entry<K, V> right;
-        Entry<K, V> parent;
+        private Entry<K, V> left;
+        private Entry<K, V> right;
+        private Entry<K, V> parent;
 
         public Entry(K key, V value) {
             this.key = key;
@@ -55,48 +56,50 @@ public class StudentMap<K extends Comparable<K>, V> implements Map<K, V> {
         this.comparator = comparator;
     }
 
-    private Entry<K, V> search(Object key) {
-        Entry<K, V> t = root;
-        if(comparator == null) {
-            try {
-                Comparable<? super K> k = (Comparable<? super K>) key;
-                if(k.compareTo(t.key) != 0) {
-                    do {
-                        //System.out.println(t);
-                        if(k.compareTo(t.key) > 0) {
-                            if(t.right == null) return null;
-                            t = t.right;
-                        } else
-                        if(k.compareTo(t.key) < 0) {
-                            if(t.left == null) return null;
-                            t = t.left;
-                        }
-                    } while(k.compareTo(t.key) != 0);
-                }
-            } catch (ClassCastException e) {
-                System.out.println(e);
-            }
-            //System.out.println(t);
+    private int compare(K key1, K key2) {
+        if(key1 == null && key2 == null) {
+            return 0;
         } else {
-            try {
-                if(comparator.compare((K)key, t.key) != 0) {
-                    do {
-                        //System.out.println(t);
-                        if(comparator.compare((K)key, t.key) > 0) {
-                            if(t.right == null) return null;
-                            t = t.right;
-                        } else
-                        if(comparator.compare((K)key, t.key) < 0) {
-                            if(t.left == null) return null;
-                            t = t.left;
-                        }
-                    } while(comparator.compare((K)key, t.key) != 0);
-                }
-            } catch (ClassCastException e) {
-                System.out.println(e);
+            if (key1 == null) {
+                return -1;
+            } else if (key2 == null) {
+                return 1;
             }
         }
-        return t;
+
+        if(comparator == null) {
+            Comparable<? super K> comparableKey = (Comparable<? super K>) key1;
+            return comparableKey.compareTo(key2);
+        } else {
+            return comparator.compare(key1, key2);
+        }
+    }
+
+    private Entry<K, V> search(Object key) {
+        Entry<K, V> currentNode = root;
+        int compareResult = compare((K) key, currentNode.key);
+        try {
+            if(compareResult != 0) {
+                do {
+                    compareResult = compare((K) key, currentNode.key);
+                    if(compareResult > 0) {
+                        if(currentNode.right == null) {
+                            return null;
+                        }
+                        currentNode = currentNode.right;
+                    } else
+                    if(compareResult < 0) {
+                        if(currentNode.left == null) {
+                            return null;
+                        }
+                        currentNode = currentNode.left;
+                    }
+                } while(compareResult != 0);
+            }
+        } catch (ClassCastException e) {
+            System.out.println(e);
+        }
+        return currentNode;
     }
 
     @Override
@@ -121,7 +124,11 @@ public class StudentMap<K extends Comparable<K>, V> implements Map<K, V> {
 
     @Override
     public V get(Object key) {
-        return search(key).value;
+        Entry<K, V> foundEntry = search(key);
+        if(foundEntry != null) {
+            return foundEntry.value;
+        }
+        return null;
     }
 
     @Override
@@ -130,139 +137,126 @@ public class StudentMap<K extends Comparable<K>, V> implements Map<K, V> {
             root = new Entry<>(key, value);
             size++;
         } else {
-            Entry<K, V> tRoot = root;
-            if(comparator == null) {
+            Entry<K, V> currentNode = root;
                 do {
-                    Comparable<? super K> k = (Comparable<? super K>) tRoot.key;
-                    int cr = k.compareTo(key);
-                    if (cr > 0) {
-                        if (tRoot.left == null) {
-                            tRoot.left = new Entry<>(key, value);
-                            tRoot.left.parent = tRoot;
+                    int compareResult = compare(currentNode.key, key);
+                    if (compareResult > 0) {
+                        if (currentNode.left == null) {
+                            currentNode.left = new Entry<>(key, value);
+                            currentNode.left.parent = currentNode;
                             size++;
-                            return tRoot.left.value;
+                            return currentNode.left.value;
                         }
-                        tRoot = tRoot.left;
+                        currentNode = currentNode.left;
                     } else {
-                        if (cr < 0) {
-                            if (tRoot.right == null) {
-                                tRoot.right = new Entry<>(key, value);
-                                tRoot.right.parent = tRoot;
+                        if (compareResult < 0) {
+                            if (currentNode.right == null) {
+                                currentNode.right = new Entry<>(key, value);
+                                currentNode.right.parent = currentNode;
                                 size++;
-                                return tRoot.right.value;
+                                return currentNode.right.value;
                             }
-                            tRoot = tRoot.right;
+                            currentNode = currentNode.right;
                         } else {
-                            V v = tRoot.value;
-                            tRoot.value = value;
+                            V v = currentNode.value;
+                            currentNode.value = value;
                             return v;
                         }
                     }
-                } while (tRoot != null);
-            } else {
-                do {
-                    int cr = comparator.compare(tRoot.key, key);
-                    if (cr > 0) {
-                        if (tRoot.left == null) {
-                            tRoot.left = new Entry<>(key, value);
-                            tRoot.left.parent = tRoot;
-                            size++;
-                            return tRoot.left.value;
-                        }
-                        tRoot = tRoot.left;
-                    } else {
-                        if (cr < 0) {
-                            if (tRoot.right == null) {
-                                tRoot.right = new Entry<>(key, value);
-                                tRoot.right.parent = tRoot;
-                                size++;
-                                return tRoot.right.value;
-                            }
-                            tRoot = tRoot.right;
-                        } else {
-                            V v = tRoot.value;
-                            tRoot.value = value;
-                            return v;
-                        }
-                    }
-                } while (tRoot != null);
+                } while (true);
             }
-
-        }
         return null;
     }
 
     @Override
     public V remove(Object key) {
-        Entry<K, V> t = search(key);
+        Entry<K, V> removingNode = search(key);
 
-        if(t == null) return null;
+        if(removingNode == null) return null;
 
-        V oldValue = t.value;
+        V oldValue = removingNode.value;
 
-        Entry<K, V> tl = t.left;
-        Entry<K, V> tr = t.right;
+        Entry<K, V> leftNode = removingNode.left;
+        Entry<K, V> rightNode = removingNode.right;
 
-        int lSize = 0, rSize= 0;
-        if(tl != null) {
-            while (tl.right != null) {
-                tl = tl.right;
-                lSize++;
+        int leftSubTreeSize = 0;
+        int rightSubTreeSize = 0;
+
+        if(leftNode != null) {
+            while (leftNode.right != null) {
+                leftNode = leftNode.right;
+                leftSubTreeSize++;
             }
         }
-        if(tr != null) {
-            while (tr.left != null) {
-                tr = tr.left;
-                rSize++;
+        if(rightNode != null) {
+            while (rightNode.left != null) {
+                rightNode = rightNode.left;
+                rightSubTreeSize++;
             }
         }
-        //System.out.println(tl + " | " + tr);
-        if(tr == null && tl == null) {
-            if(t.parent.right == t)
-                t.parent.right = null;
-            else
-                t.parent.left = null;
+        if(rightNode == null && leftNode == null) {
+            if(removingNode.parent.right == removingNode) {
+                removingNode.parent.right = null;
+            } else {
+                removingNode.parent.left = null;
+            }
             size--;
             return oldValue;
         }
 
-        if(lSize > rSize && tl != null) {
-            if(tl.parent.left == tl)
-                tl.parent.left = tl.right;
-            tl.parent.right = tl.left;
-            if(tl.left != null) {
-                System.out.println(tl);
-                tl.left.parent = tl.parent;
+        if(leftSubTreeSize > rightSubTreeSize && leftNode != null) {
+            if(leftNode.parent.left == leftNode) {
+                leftNode.parent.left = leftNode.right;
             }
-        }
-        else {
-            if(lSize < rSize || tl == null) {
-                if(tr.parent.right == tr)
-                    tr.parent.right = tr.right;
-                tr.parent.left = tr.right;
-                if(tr.right != null) {
-                    tr.right.parent = tr.parent;
+
+            leftNode.parent.right = leftNode.left;
+
+            if(leftNode.left != null) {
+                System.out.println(leftNode);
+                leftNode.left.parent = leftNode.parent;
+            }
+        } else {
+            if(leftSubTreeSize < rightSubTreeSize || leftNode == null) {
+                if(rightNode.parent.right == rightNode) {
+                    rightNode.parent.right = rightNode.right;
                 }
-                tl = tr;
+
+                rightNode.parent.left = rightNode.right;
+
+                if(rightNode.right != null) {
+                    rightNode.right.parent = rightNode.parent;
+                }
+
+                leftNode = rightNode;
             }
         }
 
-        tl.left = t.left;
-        tl.right = t.right;
-        tl.parent = t.parent;
-        if(t.left != null)
-            t.left.parent = tl;
-        if(t.right != null)
-            t.right.parent = tl;
+        leftNode.left = removingNode.left;
+        leftNode.right = removingNode.right;
+        leftNode.parent = removingNode.parent;
 
-        if(t.parent != null) {
-            if(t.parent.right == t)
-                t.parent.right = tl;
-            else
-                t.parent.left = tl;
+        if(removingNode.left != null) {
+            removingNode.left.parent = leftNode;
         }
-        if(t == root) root = tl;
+
+        if(removingNode.right != null) {
+            removingNode.right.parent = leftNode;
+        }
+
+        if(removingNode.parent != null) {
+            if(removingNode.parent.right == removingNode) {
+                removingNode.parent.right = leftNode;
+            } else {
+                removingNode.parent.left = leftNode;
+            }
+        }
+
+        if(removingNode == root)  {
+            root = leftNode;
+        }
+
         size--;
+
         return oldValue;
     }
 
@@ -281,31 +275,45 @@ public class StudentMap<K extends Comparable<K>, V> implements Map<K, V> {
 
     @Override
     public Set<K> keySet() {
-        return entrySet().stream().map(t->t.getKey()).collect(Collectors.toSet());
+        return entrySet()
+                .stream()
+                .map(currentNode->currentNode.getKey())
+                .collect(Collectors.toSet());
     }
 
     @Override
     public Collection<V> values() {
-        return entrySet().stream().map(t->t.getValue()).collect(Collectors.toList());
+        return entrySet()
+                .stream()
+                .map(currentNode->currentNode.getValue())
+                .collect(Collectors.toList());
     }
 
     @Override
     public Set<Map.Entry<K, V>> entrySet() {
-        Set<Map.Entry<K, V>> set = new LinkedHashSet<>();
-        Stack<Entry<K, V>> stack = new Stack<>();
-        Entry<K, V> t = root;
-        stack.push(t);
-        while(!stack.isEmpty()) {
-            if(t != null) {
-                stack.push(t);
-                t = t.left;
+        Set<Map.Entry<K, V>> entriesSet = new LinkedHashSet<>();
+        Stack<Entry<K, V>> helperStack = new Stack<>();
+
+        Entry<K, V> currentNode = root;
+
+        if(currentNode == null) {
+            return entriesSet; //fixed
+        }
+
+        helperStack.push(currentNode);
+
+        while(!helperStack.isEmpty()) {
+            if(currentNode != null) {
+                helperStack.push(currentNode);
+                currentNode = currentNode.left;
             } else {
-                t = stack.pop();
-                set.add(t);
-                t = t.right;
+                currentNode = helperStack.pop();
+                entriesSet.add(currentNode);
+                currentNode = currentNode.right;
             }
         }
-        return set;
+
+        return entriesSet;
     }
 
     @Override
@@ -313,15 +321,24 @@ public class StudentMap<K extends Comparable<K>, V> implements Map<K, V> {
         return toString(root);
     }
 
-    public String toString(Entry<K, V> tRoot) {
-        if(tRoot == null) return null;
-        if(tRoot.left == null && tRoot.right == null)
+    private String toString(Entry<K, V> tRoot) {
+        if(tRoot == null) {
+            return null;
+        }
+
+        if(tRoot.left == null && tRoot.right == null) {
             return tRoot.toString();
-        if(tRoot.left == null)
-            return tRoot.toString() + toString(tRoot.right);
-        if(tRoot.right == null)
-            return toString(tRoot.left) + tRoot.toString();
-        return toString(tRoot.left) + tRoot.toString() + toString(tRoot.right);
+        }
+
+        if(tRoot.left == null) {
+            return tRoot + toString(tRoot.right);
+        }
+
+        if(tRoot.right == null) {
+            return toString(tRoot.left) + tRoot;
+        }
+
+        return toString(tRoot.left) + tRoot + toString(tRoot.right);
     }
 }
 

@@ -24,15 +24,16 @@ public class Student implements Comparable<Student>
     public String getDetails() { return details; }
 
     @Override
-    public int compareTo(Student o) {
-        int compare = name.compareTo(o.name);
-        if(compare != 0)
-            return compare;
-        return dateOfBirth.compareTo(o.dateOfBirth);
+    public int compareTo(Student otherStudent) {
+        int compareResult = name.compareTo(otherStudent.name);
+        if(compareResult != 0) {
+            return compareResult;
+        }
+        return dateOfBirth.compareTo(otherStudent.dateOfBirth);
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return name + " | " + dateOfBirth + " | " + details;
     }
 
