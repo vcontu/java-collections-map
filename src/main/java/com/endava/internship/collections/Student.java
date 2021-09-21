@@ -5,12 +5,11 @@ import java.time.LocalDate;
 /**
  * The class that defines the element that will be contained by your collection
  */
-public class Student //TODO consider implementing any interfaces necessary for your collection
+public class Student implements Comparable<Student>
 {
     private String name;
     private LocalDate dateOfBirth;
     private String details;
-    private String testGit;
 
     public Student(String name, LocalDate dateOfBirth, String details) {
         this.name = name;
@@ -24,10 +23,17 @@ public class Student //TODO consider implementing any interfaces necessary for y
 
     public String getDetails() { return details; }
 
-    /*
-    TODO consider overriding any methods for this object to function properly within a collection:
-        1. A student is considered unique by a combination of their name and dateOfBirth
-        2. Student names are sorted alphabetically, if two students have the same name, then the older one is
-        placed before the younger student in an ordered student list.
-    */
+    @Override
+    public int compareTo(Student o) {
+        int compare = name.compareTo(o.name);
+        if(compare != 0)
+            return compare;
+        return dateOfBirth.compareTo(o.dateOfBirth);
+    }
+
+    @Override
+    public String toString(){
+        return name + " | " + dateOfBirth + " | " + details;
+    }
+
 }
