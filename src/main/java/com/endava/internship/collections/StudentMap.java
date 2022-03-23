@@ -5,6 +5,9 @@ import java.util.Map;
 import java.util.Set;
 
 public class StudentMap implements Map<Student, Integer> {
+
+    private int size;
+
     @Override
     public int size() {
         //TODO
